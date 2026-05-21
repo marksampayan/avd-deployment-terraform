@@ -1,5 +1,5 @@
 module "avd" {
-  source = "github.com/marksampayan/avd-terraform-modules//modules/avd-core?ref=v1.0.0"
+  source = "github.com/marksampayan/avd-terraform-modules//modules/avd-core?ref=v1.0.1"
 
   # ── Core ──────────────────────────────────────────────────────────────────────
   resource_group_name = var.resource_group_name
