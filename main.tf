@@ -336,6 +336,7 @@ resource "azurerm_role_assignment" "avd_user_appgroup" {
   scope                = azurerm_virtual_desktop_application_group.avd.id
   role_definition_name = "Desktop Virtualization User"
   principal_id         = var.avd_users_group_object_id
+  principal_type       = "Group"
 }
 
 # ── RBAC: Virtual Machine User Login (Resource Group) ─────────────────────────
@@ -345,6 +346,7 @@ resource "azurerm_role_assignment" "vm_user_login" {
   scope                = azurerm_resource_group.avd.id
   role_definition_name = "Virtual Machine User Login"
   principal_id         = var.avd_users_group_object_id
+  principal_type       = "Group"
 }
 
 # ── RBAC: Storage File Data SMB Share Contributor (FSLogix) ───────────────────
@@ -354,4 +356,5 @@ resource "azurerm_role_assignment" "fslogix_share" {
   scope                = azurerm_storage_account.fslogix.id
   role_definition_name = "Storage File Data SMB Share Contributor"
   principal_id         = var.avd_users_group_object_id
+  principal_type       = "Group"
 }
