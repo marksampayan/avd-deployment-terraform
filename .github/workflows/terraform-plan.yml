@@ -79,11 +79,14 @@ jobs:
       # ── 7. Post Plan as PR Comment ───────────────────────────────────────────
       - name: Post Plan to PR
         uses: actions/github-script@v7
+        env:
+          PLAN_STDOUT: ${{ steps.plan.outputs.stdout }}
+          PLAN_STDERR: ${{ steps.plan.outputs.stderr }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const planOutput = `${{ steps.plan.outputs.stdout }}`;
-            const planError  = `${{ steps.plan.outputs.stderr }}`;
+            const planOutput = process.env.PLAN_STDOUT;
+            const planError  = process.env.PLAN_STDERR;
             const outcome    = "${{ steps.plan.outcome }}";
             const icon       = outcome === "success" ? "✅" : "❌";
 

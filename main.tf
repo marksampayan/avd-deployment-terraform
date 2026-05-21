@@ -132,7 +132,7 @@ resource "azurerm_virtual_desktop_host_pool_registration_info" "avd" {
 # ── AVD Application Group ──────────────────────────────────────────────────────
 
 resource "azurerm_virtual_desktop_application_group" "avd" {
-  name                = "${var.host_pool_name}-AppGroup"
+  name                = "${replace(var.host_pool_name, " ", "-")}-AppGroup"
   resource_group_name = azurerm_resource_group.avd.name
   location            = azurerm_resource_group.avd.location
   type                = "Desktop"
