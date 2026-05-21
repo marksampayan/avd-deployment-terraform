@@ -59,6 +59,7 @@ fslogix_share_quota_gb = 237
 avd_users_group_object_id = "5dae55cc-6fd3-48bb-b37f-edc10ae3880d"
 
 # ── Tags ──────────────────────────────────────────────────────────────────────
+# test: workflow verification PR - safe to merge
 tags = {
   Environment = "Production"
   ManagedBy   = "Terraform"
