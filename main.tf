@@ -358,3 +358,36 @@ resource "azurerm_role_assignment" "fslogix_share" {
   principal_id         = var.avd_users_group_object_id
   principal_type       = "Group"
 }
+
+# ── Import: Pre-existing VM extensions ────────────────────────────────────────
+# Extensions were deployed outside Terraform and must be imported into state.
+
+import {
+  to = azurerm_virtual_machine_extension.entra_join[0]
+  id = "/subscriptions/6598dd7c-4f8f-4a24-9dfa-31a6fb73c32b/resourceGroups/FIT-AVD-Prod/providers/Microsoft.Compute/virtualMachines/FIT-AVDN-101/extensions/FIT-AVDN-101-join-aad"
+}
+
+import {
+  to = azurerm_virtual_machine_extension.entra_join[1]
+  id = "/subscriptions/6598dd7c-4f8f-4a24-9dfa-31a6fb73c32b/resourceGroups/FIT-AVD-Prod/providers/Microsoft.Compute/virtualMachines/FIT-AVDN-102/extensions/FIT-AVDN-102-join-aad"
+}
+
+import {
+  to = azurerm_virtual_machine_extension.entra_join[2]
+  id = "/subscriptions/6598dd7c-4f8f-4a24-9dfa-31a6fb73c32b/resourceGroups/FIT-AVD-Prod/providers/Microsoft.Compute/virtualMachines/FIT-AVDN-103/extensions/FIT-AVDN-103-join-aad"
+}
+
+import {
+  to = azurerm_virtual_machine_extension.azure_monitor[0]
+  id = "/subscriptions/6598dd7c-4f8f-4a24-9dfa-31a6fb73c32b/resourceGroups/FIT-AVD-Prod/providers/Microsoft.Compute/virtualMachines/FIT-AVDN-101/extensions/FIT-AVDN-101-azure-monitoring"
+}
+
+import {
+  to = azurerm_virtual_machine_extension.azure_monitor[1]
+  id = "/subscriptions/6598dd7c-4f8f-4a24-9dfa-31a6fb73c32b/resourceGroups/FIT-AVD-Prod/providers/Microsoft.Compute/virtualMachines/FIT-AVDN-102/extensions/FIT-AVDN-102-azure-monitoring"
+}
+
+import {
+  to = azurerm_virtual_machine_extension.azure_monitor[2]
+  id = "/subscriptions/6598dd7c-4f8f-4a24-9dfa-31a6fb73c32b/resourceGroups/FIT-AVD-Prod/providers/Microsoft.Compute/virtualMachines/FIT-AVDN-103/extensions/FIT-AVDN-103-azure-monitoring"
+}
