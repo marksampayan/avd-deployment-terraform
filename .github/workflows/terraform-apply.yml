@@ -1,0 +1,94 @@
+name: "Terraform Apply"
+
+# Triggered automatically when a PR is approved and merged to main
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "**.tf"
+      - "**.tfvars"
+      - ".github/workflows/terraform-*.yml"
+
+permissions:
+  id-token: write  # Required for OIDC login to Azure
+  contents: read
+
+jobs:
+  apply:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+
+    # "production" environment adds a required-reviewer gate in GitHub.
+    # Configure: Settings → Environments → production → Required reviewers
+    # This means even after a PR merge, a human must click "Approve" in
+    # GitHub before terraform apply actually runs.
+    environment: production
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── 2. Setup Terraform ───────────────────────────────────────────────────
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.x"
+
+      # ── 3. Azure Login via OIDC ──────────────────────────────────────────────
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # ── 4. Terraform Init ────────────────────────────────────────────────────
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="resource_group_name=${{ vars.TF_STATE_RESOURCE_GROUP }}" \
+            -backend-config="storage_account_name=${{ vars.TF_STATE_STORAGE_ACCOUNT }}" \
+            -backend-config="container_name=${{ vars.TF_STATE_CONTAINER }}" \
+            -backend-config="key=fit-avd-india.tfstate" \
+            -backend-config="use_oidc=true" \
+            -backend-config="subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}" \
+            -backend-config="tenant_id=${{ secrets.AZURE_TENANT_ID }}" \
+            -backend-config="client_id=${{ secrets.AZURE_CLIENT_ID }}"
+        env:
+          ARM_USE_OIDC:        true
+          ARM_CLIENT_ID:       ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID:       ${{ secrets.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # ── 5. Terraform Apply ───────────────────────────────────────────────────
+      - name: Terraform Apply
+        id: apply
+        run: terraform apply -auto-approve -no-color
+        env:
+          ARM_USE_OIDC:               true
+          ARM_CLIENT_ID:              ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID:              ${{ secrets.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID:        ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          TF_VAR_vm_admin_password:   ${{ secrets.TF_VAR_VM_ADMIN_PASSWORD }}
+
+      # ── 6. Print key outputs ─────────────────────────────────────────────────
+      - name: Show Deployment Outputs
+        if: steps.apply.outcome == 'success'
+        run: |
+          echo ""
+          echo "================================================="
+          echo " AVD Deployment Complete"
+          echo "================================================="
+          terraform output host_pool_name
+          terraform output workspace_name
+          terraform output storage_account_name
+          terraform output fslogix_share_unc_path
+          terraform output session_host_names
+          echo "================================================="
+        env:
+          ARM_USE_OIDC:        true
+          ARM_CLIENT_ID:       ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID:       ${{ secrets.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
