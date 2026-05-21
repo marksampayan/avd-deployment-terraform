@@ -1,0 +1,98 @@
+# =============================================================================
+# AVD Deployment — Variable Template
+# Copy this file to terraform.tfvars and fill in the values for your deployment.
+# Sensitive values (vm_admin_password, domain_join_password) must be injected
+# via GitHub Actions Secrets as TF_VAR_* environment variables — never stored here.
+# =============================================================================
+
+# ── Azure Subscription / Tenant ───────────────────────────────────────────────
+subscription_id = "00000000-0000-0000-0000-000000000000"
+tenant_id       = "00000000-0000-0000-0000-000000000000"
+
+# ── Location ──────────────────────────────────────────────────────────────────
+# Must be an AVD-supported region: https://aka.ms/avd-data-locations
+# Examples: eastus, westeurope, southeastasia, australiaeast, japaneast,
+#           centralindia, uksouth, canadacentral, brazilsouth
+location = "eastus"
+
+# ── Resource Group ────────────────────────────────────────────────────────────
+resource_group_name = "AVD-Prod"
+
+# ── Network ───────────────────────────────────────────────────────────────────
+vnet_name             = "AVD-VNet"
+vnet_address_space    = ["10.0.0.0/24"]
+subnet_address_prefix = "10.0.0.0/24"
+
+# DNS servers pointing to your domain controllers (AADDS or traditional DC IPs)
+# Keep 168.63.129.16 as the last entry — Azure DNS fallback
+dns_servers = ["10.x.x.x", "10.x.x.x", "168.63.129.16"]
+
+# VNet peering to the hub/AADDS VNet — set to true once AADDS or hub VNet exists
+enable_hub_peering = false
+# hub_vnet_id = "/subscriptions/.../resourceGroups/.../providers/Microsoft.Network/virtualNetworks/..."
+
+# ── Workspace ─────────────────────────────────────────────────────────────────
+workspace_name          = "AVD-Workspace"
+workspace_friendly_name = "AVD Workspace"
+workspace_description   = "AVD Workspace"
+
+# ── Host Pool ─────────────────────────────────────────────────────────────────
+host_pool_name                    = "AVD-HostPool"
+host_pool_friendly_name           = "AVD Host Pool"
+host_pool_description             = "Pooled host pool"
+max_sessions_per_host             = 4
+registration_token_validity_hours = 24
+
+# ── Session Hosts ─────────────────────────────────────────────────────────────
+session_host_count       = 3
+session_host_prefix      = "AVDH"
+session_host_start_index = 1
+vm_size                  = "Standard_D4s_v5"
+vm_admin_username        = "LocalAdmin"
+# vm_admin_password is injected via GitHub Secret TF_VAR_VM_ADMIN_PASSWORD
+
+os_disk_size_gb      = 128
+os_disk_storage_type = "StandardSSD_LRS"
+
+# Marketplace image: Windows 11 24H2 multi-session + M365
+use_custom_image            = false
+marketplace_image_publisher = "MicrosoftWindowsDesktop"
+marketplace_image_offer     = "office-365"
+marketplace_image_sku       = "win11-24h2-avd-m365"
+marketplace_image_version   = "latest"
+
+# ── Domain Join ───────────────────────────────────────────────────────────────
+# "entra"          — Entra ID join (use with AADDS or native Entra join)
+# "traditional_dc" — Traditional Active Directory domain join
+domain_join_type = "entra"
+
+# Required only when domain_join_type = "traditional_dc"
+# domain_name          = "corp.example.com"
+# domain_join_username = "svc-domainjoin"
+# domain_ou_path       = "OU=AVD,DC=corp,DC=example,DC=com"
+# domain_join_password is injected via GitHub Secret TF_VAR_DOMAIN_JOIN_PASSWORD
+
+# ── FSLogix ───────────────────────────────────────────────────────────────────
+fslogix_share_name     = "profiles"
+fslogix_share_quota_gb = 100
+
+# "AADKERB" for Entra-joined VMs | "AD" for traditional domain-joined VMs
+fslogix_auth_type = "AADKERB"
+
+# ── App Install (optional) ────────────────────────────────────────────────────
+# Point to a PowerShell script to install LOB apps on every session host.
+# The script runs after the AVD agent is registered. Leave commented to skip.
+# app_install_script_url = "https://your-storage.blob.core.windows.net/scripts/install-apps.ps1"
+
+# ── RBAC ──────────────────────────────────────────────────────────────────────
+# Object ID of the Entra group whose members get AVD desktop access
+# Find it: az ad group show --group "YourGroupName" --query id -o tsv
+avd_users_group_object_id = "00000000-0000-0000-0000-000000000000"
+
+# ── Tags ──────────────────────────────────────────────────────────────────────
+tags = {
+  Environment = "Production"
+  ManagedBy   = "Terraform"
+  Project     = "AVD"
+  CostCenter  = "IT"
+}

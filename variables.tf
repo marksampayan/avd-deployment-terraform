@@ -14,7 +14,7 @@ variable "resource_group_name" {
 }
 
 variable "location" {
-  description = "Azure region for the deployment"
+  description = "Azure region for the deployment. Must be a region that supports AVD host pool metadata — see https://aka.ms/avd-data-locations for the full list."
   type        = string
 }
 
