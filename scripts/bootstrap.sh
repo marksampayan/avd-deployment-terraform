@@ -21,21 +21,24 @@
 
 set -euo pipefail
 
-# ── Configuration ─────────────────────────────────────────────────────────────
-TARGET_SUBSCRIPTION_ID="6598dd7c-4f8f-4a24-9dfa-31a6fb73c32b"
-TENANT_ID="490c3a5e-c1b8-43f7-9104-e28e6f7bc536"
-STATE_RESOURCE_GROUP="rg-terraform-state"
-STATE_LOCATION="centralindia"
-STATE_CONTAINER="tfstate"
-SP_NAME="sp-avd-deployment-terraform"
-GITHUB_ORG="${GITHUB_ORG:?ERROR: Set GITHUB_ORG first. Example: export GITHUB_ORG=myorg}"
-GITHUB_REPO="${GITHUB_REPO:?ERROR: Set GITHUB_REPO first. Example: export GITHUB_REPO=fit-avd-india-terraform}"
+# ── Required inputs ───────────────────────────────────────────────────────────
+GITHUB_ORG="${GITHUB_ORG:?ERROR: Set GITHUB_ORG. Example: export GITHUB_ORG=myorg}"
+GITHUB_REPO="${GITHUB_REPO:?ERROR: Set GITHUB_REPO. Example: export GITHUB_REPO=avd-deployment-terraform}"
+TARGET_SUBSCRIPTION_ID="${TARGET_SUBSCRIPTION_ID:?ERROR: Set TARGET_SUBSCRIPTION_ID. Example: export TARGET_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000}"
+TENANT_ID="${TENANT_ID:?ERROR: Set TENANT_ID. Example: export TENANT_ID=00000000-0000-0000-0000-000000000000}"
+STATE_LOCATION="${STATE_LOCATION:?ERROR: Set STATE_LOCATION. Example: export STATE_LOCATION=eastus}"
+
+# ── Optional overrides ────────────────────────────────────────────────────────
+STATE_RESOURCE_GROUP="${STATE_RESOURCE_GROUP:-rg-terraform-state}"
+STATE_CONTAINER="${STATE_CONTAINER:-tfstate}"
+SP_NAME="${SP_NAME:-sp-avd-deployment-terraform}"
 
 echo ""
 echo "================================================================"
 echo " AVD Deployment — Terraform Bootstrap"
 echo " Target Subscription : $TARGET_SUBSCRIPTION_ID"
 echo " Tenant              : $TENANT_ID"
+echo " State Location      : $STATE_LOCATION"
 echo " GitHub Repo         : $GITHUB_ORG/$GITHUB_REPO"
 echo "================================================================"
 echo ""
@@ -48,7 +51,7 @@ echo "      Done."
 # ── Step 2: Create Terraform state storage backend ────────────────────────────
 RAND=$(cat /dev/urandom 2>/dev/null | tr -dc 'a-z0-9' | head -c 6 || \
        LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 6)
-STATE_STORAGE_ACCOUNT="stfitavdtfstate${RAND}"
+STATE_STORAGE_ACCOUNT="stavdtfstate${RAND}"
 
 echo "[2/5] Creating Terraform state backend..."
 echo "      Resource Group  : $STATE_RESOURCE_GROUP"

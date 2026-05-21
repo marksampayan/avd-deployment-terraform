@@ -1,7 +1,30 @@
 # AVD Deployment — Terraform IaC + GitHub Actions CI/CD
 
-Terraform code to deploy an **Azure Virtual Desktop** environment (Pooled host pool, Central India)  
-with a full GitHub Actions CI/CD pipeline featuring PR-based approval before any deployment.
+Reusable Terraform template for deploying **Azure Virtual Desktop** (pooled host pool) to any Azure region and subscription, with a full GitHub Actions CI/CD pipeline and production approval gate.
+
+---
+
+## Repository structure
+
+```
+.
+├── main.tf                    ← calls modules/avd-core with deployment values
+├── variables.tf               ← all input variables
+├── outputs.tf                 ← deployment outputs
+├── providers.tf               ← Azure provider + backend config
+├── terraform.tfvars           ← THIS deployment's values (not committed for new deployments)
+├── terraform.tfvars.example   ← blank template — copy and fill in for each new deployment
+├── modules/
+│   └── avd-core/              ← reusable AVD module (all Azure resources)
+│       ├── main.tf
+│       ├── variables.tf
+│       └── outputs.tf
+├── scripts/
+│   └── bootstrap.sh           ← one-time Azure + GitHub setup script
+└── .github/workflows/
+    ├── terraform-plan.yml     ← runs on pull requests
+    └── terraform-apply.yml    ← runs on merge to main (with approval gate)
+```
 
 ---
 
@@ -12,133 +35,156 @@ GitHub PR → terraform plan (posted as PR comment) → PR Approval
      ↓
 Merge to main → "production" environment gate → terraform apply
      ↓
-Azure (Subscription: 6598dd7c-4f8f-4a24-9dfa-31a6fb73c32b)
-     ├── Resource Group: FIT-AVD-Prod  (centralindia)
-     ├── VNet + Subnet (10.1.2.0/24) + NSG
-     ├── AVD Host Pool    — Pooled, DepthFirst, 4 sessions/host
+Azure Subscription
+     ├── Resource Group (your region)
+     ├── VNet + Subnet + NSG
+     ├── AVD Host Pool    — Pooled, DepthFirst
      ├── AVD App Group    — Desktop type
      ├── AVD Workspace
-     ├── Storage Account  — avdprofile<random> (Premium, FSLogix profiles)
-     │    └── File Share: profiles (237 GiB, SMB, AADKERB)
-     └── Session Hosts x3 — Standard_E4s_v5, Win11 multi-session + M365
-          ├── Entra ID Join extension
+     ├── Storage Account  — Premium FSLogix profiles (SMB)
+     └── Session Hosts (N × your VM size)
+          ├── Domain join extension  (Entra ID or traditional AD)
           ├── AVD DSC agent extension
-          └── Azure Monitor Agent extension
+          ├── Azure Monitor Agent extension
+          └── App install extension  (optional, for LOB apps)
 ```
 
 ---
 
-## CI/CD Flow
+## Starting a new deployment
 
-```
-1. Developer creates branch → makes .tf changes → opens Pull Request to main
-        ↓
-2. GitHub Actions runs terraform plan automatically
-   Posts plan output as a comment on the PR ← Reviewer reads this
-        ↓
-3. Reviewer approves the PR → Developer merges to main
-        ↓
-4. GitHub Actions triggers terraform apply
-   Waits for "production" environment approval ← Optional second gate
-        ↓
-5. Resources deployed to Azure → outputs printed (FSLogix UNC path, VM names, etc.)
+### Step 1 — Create your repo from the template
+
+Go to `github.com/marksampayan/avd-deployment-terraform` → click **"Use this template"** → **"Create a new repository"** under your GitHub account.
+
+Clone it locally:
+```bash
+git clone https://github.com/<your-account>/<your-repo>.git
+cd <your-repo>
 ```
 
----
-
-## One-Time Bootstrap
-
-Run this **once** before the first GitHub Actions run. Requires Azure CLI and Owner access on the target subscription.
+### Step 2 — Create your terraform.tfvars
 
 ```bash
-export GITHUB_ORG=marksampayan
-export GITHUB_REPO=avd-deployment-terraform
+cp terraform.tfvars.example terraform.tfvars
+```
+
+Edit `terraform.tfvars` — fill in your subscription ID, tenant ID, location, VM count, naming, etc. See `terraform.tfvars.example` for all available options and comments.
+
+**Key values to set for every new deployment:**
+
+| Variable | What to set |
+|----------|-------------|
+| `subscription_id` | Your Azure subscription ID |
+| `tenant_id` | Your Azure Entra tenant ID |
+| `location` | Azure region (must support AVD — see [supported regions](https://aka.ms/avd-data-locations)) |
+| `session_host_count` | Number of VMs (1–50) |
+| `avd_users_group_object_id` | Object ID of the Entra group for AVD users |
+| `domain_join_type` | `"entra"` for Entra ID join, `"traditional_dc"` for on-prem AD |
+
+### Step 3 — Run the bootstrap script
+
+Run **once** from your local machine. Requires Azure CLI and Owner access on the target subscription.
+
+```bash
+export GITHUB_ORG=<your-github-username-or-org>
+export GITHUB_REPO=<your-repo-name>
+export TARGET_SUBSCRIPTION_ID=<your-subscription-id>
+export TENANT_ID=<your-tenant-id>
+export STATE_LOCATION=<azure-region>   # e.g. eastus — where state storage is created
 
 chmod +x scripts/bootstrap.sh
 ./scripts/bootstrap.sh
 ```
 
-Creates:
+The script creates:
 - Azure Storage Account for Terraform remote state
 - App Registration with OIDC federated credentials (no stored client secrets)
 - Service Principal with `Contributor` + `User Access Administrator` roles
 - Prints all values needed for GitHub Secrets and Variables
 
----
+### Step 4 — Configure GitHub repository
 
-## GitHub Repository Setup
-
-### Step 1 — GitHub Secrets
+#### Secrets
 `Settings → Secrets and variables → Actions → New repository secret`
 
-| Secret | Description |
-|--------|-------------|
+| Secret | Value |
+|--------|-------|
 | `AZURE_CLIENT_ID` | From bootstrap output |
-| `AZURE_TENANT_ID` | `490c3a5e-c1b8-43f7-9104-e28e6f7bc536` |
-| `AZURE_SUBSCRIPTION_ID` | `6598dd7c-4f8f-4a24-9dfa-31a6fb73c32b` |
+| `AZURE_TENANT_ID` | Your tenant ID |
+| `AZURE_SUBSCRIPTION_ID` | Your subscription ID |
 | `TF_VAR_VM_ADMIN_PASSWORD` | Secure local admin password for session host VMs |
+| `TF_VAR_DOMAIN_JOIN_PASSWORD` | Domain join account password *(only if using `traditional_dc`)* |
 
-### Step 2 — GitHub Variables
+#### Variables
 `Settings → Secrets and variables → Actions → New repository variable`
 
 | Variable | Value (from bootstrap output) |
 |----------|-------------------------------|
 | `TF_STATE_RESOURCE_GROUP` | `rg-terraform-state` |
-| `TF_STATE_STORAGE_ACCOUNT` | `stfitavdtfstate<random>` |
+| `TF_STATE_STORAGE_ACCOUNT` | `stavdtfstate<random>` |
 | `TF_STATE_CONTAINER` | `tfstate` |
 
-### Step 3 — Production Environment (Approval Gate)
+#### Production environment (approval gate)
 `Settings → Environments → New environment → Name: production`
 - Enable **Required reviewers** → add yourself or your team
 - This blocks `terraform apply` until a human clicks Approve in GitHub
 
-### Step 4 — Branch Protection on `main`
-`Settings → Branches → Add branch protection rule → Branch: main`
+#### Branch protection on `main`
+`Settings → Branches → Add rule → Branch name pattern: main`
 - ✅ Require a pull request before merging
 - ✅ Require approvals (minimum 1)
 - ✅ Require status checks to pass: `Terraform Plan / Terraform Plan`
 - ✅ Require branches to be up to date before merging
 
+### Step 5 — Deploy
+
+Push to main (or merge a PR) — GitHub Actions handles the rest.
+
 ---
 
-## Local Development
+## Domain join options
 
-```bash
-az login
-az account set --subscription "6598dd7c-4f8f-4a24-9dfa-31a6fb73c32b"
+| `domain_join_type` | Extension used | Additional variables required |
+|--------------------|---------------|-------------------------------|
+| `entra` *(default)* | `AADLoginForWindows` | None |
+| `traditional_dc` | `JsonADDomainExtension` | `domain_name`, `domain_join_username`, `domain_join_password` (via secret) |
 
-terraform init \
-  -backend-config="resource_group_name=rg-terraform-state" \
-  -backend-config="storage_account_name=<from bootstrap output>" \
-  -backend-config="container_name=tfstate" \
-  -backend-config="key=avd-deployment.tfstate"
+When switching to `traditional_dc`, also set:
+- `fslogix_auth_type = "AD"` (instead of `"AADKERB"`)
+- `dns_servers` pointing to your DC IPs
 
-export TF_VAR_vm_admin_password="YourPassword"
-terraform plan
-terraform apply
+---
+
+## LOB application install
+
+Set `app_install_script_url` in `terraform.tfvars` to a publicly reachable PowerShell script URL. The script runs on every session host after the AVD agent registers. Leave it `null` (or commented out) to skip.
+
+```hcl
+app_install_script_url = "https://your-storage.blob.core.windows.net/scripts/install-apps.ps1"
 ```
 
 ---
 
-## Key Variables
+## Key variables reference
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `session_host_count` | `3` | Number of session host VMs |
-| `vm_size` | `Standard_E4s_v5` | 4 vCPU / 32 GB RAM |
+| `location` | *(required)* | Azure region — must support AVD metadata |
+| `session_host_count` | *(required)* | Number of session host VMs (1–50) |
+| `vm_size` | `Standard_D4s_v5` | VM size for session hosts |
 | `max_sessions_per_host` | `4` | Max concurrent sessions per VM |
-| `fslogix_share_quota_gb` | `237` | FSLogix profile share size in GiB |
-| `enable_hub_peering` | `false` | Enable VNet peering to Entra DS / hub VNet |
+| `domain_join_type` | `entra` | `entra` or `traditional_dc` |
+| `fslogix_auth_type` | `AADKERB` | `AADKERB` or `AD` |
+| `fslogix_share_quota_gb` | `100` | FSLogix profile share size in GiB |
+| `app_install_script_url` | `null` | Optional LOB app install script URL |
 | `use_custom_image` | `false` | Use Shared Image Gallery instead of marketplace |
-| `avd_users_group_object_id` | — | Entra group that can log into AVD |
-
-Sensitive values (`vm_admin_password`) are **never** in committed files — always via `TF_VAR_VM_ADMIN_PASSWORD` GitHub Secret.
 
 ---
 
-## Post-Deployment: FSLogix
+## Post-deployment: FSLogix
 
-After `terraform apply`, configure FSLogix via Intune or GPO on session hosts:
+After `terraform apply`, configure FSLogix on session hosts via Intune or GPO:
 
 | Setting | Value |
 |---------|-------|
