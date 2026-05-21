@@ -122,6 +122,19 @@ az ad app federated-credential create \
   }" \
   --output none
 
+# Federated credential for production environment (terraform apply workflow)
+# Required because jobs with 'environment: production' use a different OIDC subject
+az ad app federated-credential create \
+  --id "$APP_ID" \
+  --parameters "{
+    \"name\": \"github-production-env\",
+    \"issuer\": \"https://token.actions.githubusercontent.com\",
+    \"subject\": \"repo:${GITHUB_ORG}/${GITHUB_REPO}:environment:production\",
+    \"description\": \"GitHub Actions - production environment (terraform apply)\",
+    \"audiences\": [\"api://AzureADTokenExchange\"]
+  }" \
+  --output none
+
 echo "      Done."
 
 # ── Step 5: Assign RBAC roles ─────────────────────────────────────────────────
