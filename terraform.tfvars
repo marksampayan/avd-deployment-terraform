@@ -15,9 +15,9 @@ vnet_name             = "FIT-AVD-India"
 vnet_address_space    = ["10.1.2.0/24"]
 subnet_address_prefix = "10.1.2.0/24"
 
-# DNS servers pointing to Entra DS / AD domain controllers in target environment
-# Update these IPs once Entra DS / AD is deployed in the target subscription
-dns_servers = ["10.2.0.4", "10.2.0.5"]
+# DNS servers: Entra DS DCs primary, Azure default DNS as fallback
+# Fallback (168.63.129.16) ensures Azure AD endpoints resolve while AADDS initialises
+dns_servers = ["10.2.0.4", "10.2.0.5", "168.63.129.16"]
 
 # Hub VNet peering — enable once Entra DS / hub VNet exists in target subscription
 enable_hub_peering = false
@@ -56,7 +56,7 @@ fslogix_share_quota_gb = 237
 # ── RBAC ──────────────────────────────────────────────────────────────────────
 # Object ID of the Entra group for India AVD users in the TARGET tenant
 # Find it: az ad group show --group "FIT-AVD-Users-India" --query id -o tsv
-avd_users_group_object_id = "5dae55cc-6fd3-48bb-b37f-edc10ae3880d"
+avd_users_group_object_id = "1992fb97-d4e5-49fb-8d81-e575271a8be4"
 
 # ── Tags ──────────────────────────────────────────────────────────────────────
 # test: workflow verification PR - safe to merge
