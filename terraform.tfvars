@@ -23,6 +23,27 @@ dns_servers = ["10.2.0.4", "10.2.0.5", "168.63.129.16"]
 enable_hub_peering = false
 hub_vnet_id        = null
 
+# ── Workspace ─────────────────────────────────────────────────────────────────
+workspace_name          = "FIT-AVD-India"
+workspace_friendly_name = "FIT India Workspace"
+workspace_description   = "Workspace for users working from the India and Philippines region"
+
+# ── Domain Join ───────────────────────────────────────────────────────────────
+# Use "entra" for Entra ID / AADDS join (current setup)
+# Use "traditional_dc" and fill domain_name / domain_join_username / domain_join_password for on-prem AD
+domain_join_type = "entra"
+# domain_name          = "corp.example.com"
+# domain_join_username = "svc-domainjoin"
+# domain_ou_path       = "OU=AVD,DC=corp,DC=example,DC=com"
+
+# ── FSLogix ───────────────────────────────────────────────────────────────────
+# AADKERB = Entra-joined VMs, AD = traditional domain-joined VMs
+fslogix_auth_type = "AADKERB"
+
+# ── App Install ───────────────────────────────────────────────────────────────
+# Uncomment and set a URL to run a PowerShell script on every session host after deployment
+# app_install_script_url = "https://your-storage.blob.core.windows.net/scripts/install-apps.ps1"
+
 # ── Host Pool ─────────────────────────────────────────────────────────────────
 host_pool_name                    = "FIT AVD Desktop NEW"
 host_pool_friendly_name           = "FIT India Desktop NEW"

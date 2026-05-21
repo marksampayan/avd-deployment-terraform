@@ -1,15 +1,5 @@
-variable "subscription_id" {
-  description = "Target Azure subscription ID"
-  type        = string
-}
-
-variable "tenant_id" {
-  description = "Azure Entra tenant ID"
-  type        = string
-}
-
 variable "resource_group_name" {
-  description = "Name of the resource group"
+  description = "Name of the resource group to create"
   type        = string
 }
 
@@ -33,7 +23,7 @@ variable "subnet_address_prefix" {
 }
 
 variable "dns_servers" {
-  description = "Custom DNS servers — point to domain controllers (AADDS or traditional DC IPs)"
+  description = "Custom DNS servers — point to domain controllers (AADDS or traditional DC)"
   type        = list(string)
 }
 
@@ -196,7 +186,7 @@ variable "domain_join_password" {
 }
 
 variable "domain_ou_path" {
-  description = "OU path for computer accounts e.g. 'OU=AVD,DC=corp,DC=com' (optional)"
+  description = "OU path for computer accounts e.g. 'OU=AVD,DC=corp,DC=com' (optional, used when domain_join_type = 'traditional_dc')"
   type        = string
   default     = ""
 }
@@ -227,7 +217,7 @@ variable "fslogix_auth_type" {
 # ── App Install ────────────────────────────────────────────────────────────────
 
 variable "app_install_script_url" {
-  description = "URL to a PowerShell script that installs LOB applications. Leave null to skip."
+  description = "URL to a PowerShell script that installs LOB applications. Leave null to skip. Script runs on every session host after the AVD agent is registered."
   type        = string
   default     = null
 }

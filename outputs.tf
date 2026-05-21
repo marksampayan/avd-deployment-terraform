@@ -1,51 +1,50 @@
 output "resource_group_id" {
-  value = azurerm_resource_group.avd.id
+  value = module.avd.resource_group_id
 }
 
 output "host_pool_id" {
-  value = azurerm_virtual_desktop_host_pool.avd.id
+  value = module.avd.host_pool_id
 }
 
 output "host_pool_name" {
-  value = azurerm_virtual_desktop_host_pool.avd.name
+  value = module.avd.host_pool_name
 }
 
 output "application_group_id" {
-  value = azurerm_virtual_desktop_application_group.avd.id
+  value = module.avd.application_group_id
 }
 
 output "workspace_id" {
-  value = azurerm_virtual_desktop_workspace.avd.id
+  value = module.avd.workspace_id
 }
 
 output "workspace_name" {
-  value = azurerm_virtual_desktop_workspace.avd.name
+  value = module.avd.workspace_name
 }
 
 output "storage_account_name" {
-  description = "Auto-generated FSLogix storage account name (avdprofile + 8-char suffix)"
-  value       = azurerm_storage_account.fslogix.name
+  value = module.avd.storage_account_name
 }
 
 output "fslogix_share_unc_path" {
   description = "UNC path to configure in FSLogix VHDLocations policy"
-  value       = "\\\\${azurerm_storage_account.fslogix.name}.file.core.windows.net\\${azurerm_storage_share.fslogix_profiles.name}"
+  value       = module.avd.fslogix_share_unc_path
 }
 
 output "session_host_names" {
-  value = azurerm_windows_virtual_machine.session_host[*].name
+  value = module.avd.session_host_names
 }
 
 output "vnet_id" {
-  value = azurerm_virtual_network.avd.id
+  value = module.avd.vnet_id
 }
 
 output "subnet_id" {
-  value = azurerm_subnet.avd.id
+  value = module.avd.subnet_id
 }
 
 output "registration_token" {
-  value       = azurerm_virtual_desktop_host_pool_registration_info.avd.token
+  value       = module.avd.registration_token
   sensitive   = true
   description = "AVD registration token — use to manually add additional session hosts"
 }
