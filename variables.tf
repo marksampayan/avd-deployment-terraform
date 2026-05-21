@@ -92,8 +92,13 @@ variable "workspace_description" {
 # ── Session Hosts ──────────────────────────────────────────────────────────────
 
 variable "session_host_count" {
-  type    = number
-  default = 3
+  description = "Number of session host VMs to deploy. Scale up or down per deployment needs."
+  type        = number
+
+  validation {
+    condition     = var.session_host_count >= 1 && var.session_host_count <= 50
+    error_message = "session_host_count must be between 1 and 50."
+  }
 }
 
 variable "session_host_prefix" {

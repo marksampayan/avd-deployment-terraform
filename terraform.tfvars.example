@@ -44,7 +44,7 @@ max_sessions_per_host             = 4
 registration_token_validity_hours = 24
 
 # ── Session Hosts ─────────────────────────────────────────────────────────────
-session_host_count       = 3
+session_host_count       = 3   # Set this per deployment — valid range: 1–50
 session_host_prefix      = "AVDH"
 session_host_start_index = 1
 vm_size                  = "Standard_D4s_v5"
